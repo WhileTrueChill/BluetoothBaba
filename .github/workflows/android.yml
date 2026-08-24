@@ -1,0 +1,42 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Android
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Add Android targets
+        run: |
+          rustup target add aarch64-linux-android
+
+      - name: Initialize Android
+        run: npm run tauri android init
+
+      - name: Build APK
+        run: npm run tauri android build
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeshChat-APK
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
