@@ -1,0 +1,35 @@
+[package]
+name = "meshchat"
+version = "1.0.0"
+description = "MeshChat — serverless BitChat-style text messaging over a Bluetooth LE mesh"
+authors = ["MeshChat"]
+edition = "2021"
+rust-version = "1.77.2"
+
+# The Android/iOS entry point is generated into the library; the binary is only
+# used for desktop dev. `staticlib`/`cdylib` are required by the mobile linker.
+[lib]
+name = "meshchat_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-blemesh = { path = "../tauri-plugin-blemesh" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+log = "0.4"
+
+# Mesh crypto: X25519 ECDH -> HKDF-SHA256 -> ChaCha20-Poly1305 for direct messages.
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+chacha20poly1305 = "0.10"
+hkdf = "0.12"
+sha2 = "0.10"
+rand = "0.8"
+base64 = "0.22"
+
+[features]
+# This feature is used to prevent `tauri` from stripping symbols in dev.
+custom-protocol = ["tauri/custom-protocol"]

@@ -1,0 +1,23 @@
+node_modules
+dist
+.DS_Store
+*.log
+npm-debug.log*
+
+# Rust / Tauri build artifacts
+src-tauri/target
+tauri-plugin-blemesh/target
+
+# Generated native projects — recreated by `tauri android init` in CI.
+# (If CI ever fails to include the BLE plugin, commit src-tauri/gen instead.)
+src-tauri/gen
+
+# Local env / secrets
+.env
+*.keystore
+*.jks
+keystore.properties
+
+# Generated at build time by scripts/make-icon.mjs + `tauri icon`.
+app-icon.png
+src-tauri/icons/

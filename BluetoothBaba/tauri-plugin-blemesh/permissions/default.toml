@@ -1,0 +1,10 @@
+"$schema" = "schemas/schema.json"
+
+[default]
+description = """
+Allows MeshChat to receive inbound BLE frames from the native mesh plugin by
+registering event listeners (the JS `addPluginListener('blemesh', 'packet')`
+bridge). Control commands (start/stop/send) are invoked from Rust and are not
+exposed to the webview.
+"""
+permissions = ["allow-register-listener", "allow-remove-listener"]

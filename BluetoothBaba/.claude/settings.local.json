@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:crates.io)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:v2.tauri.app)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:lib.rs)",
+      "WebFetch(domain:docs.rs)",
+      "WebFetch(domain:developers.google.com)",
+      "WebFetch(domain:registry.npmjs.org)",
+      "WebSearch",
+      "Bash(gh api *)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(npm install *)",
+      "Bash(npm rebuild *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(node scripts/make-icon.mjs app-icon.png)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const b=fs.readFileSync\\('app-icon.png'\\);const sigOk=b.slice\\(0,8\\).equals\\(Buffer.from\\([137,80,78,71,13,10,26,10]\\)\\);const w=b.readUInt32BE\\(16\\),h=b.readUInt32BE\\(20\\);console.log\\('PNG signature ok:',sigOk,'dimensions:',w+'x'+h,'type byte:',b[25]\\);\")",
+      "Bash(cygpath -w \"/tmp/meshchat-stage/MeshChat\")",
+      "Bash(cygpath -w \"/tmp/MeshChat.zip\")",
+      "Bash(powershell -NoProfile -Command 'Compress-Archive -Path '\\\\''__CMDSUB_OUTPUT__'\\\\'' -DestinationPath '\\\\''__TRACKED_VAR__'\\\\'' -Force')",
+      "Read(//tmp/**)",
+      "Bash(powershell -NoProfile -Command 'Add-Type -AssemblyName System.IO.Compression.FileSystem; $z=[System.IO.Compression.ZipFile]::OpenRead\\('\\\\''__CMDSUB_OUTPUT__'\\\\''\\); $z.Entries | ForEach-Object { '\\\\''{0,8}  {1}'\\\\'' -f $_.Length, $_.FullName }; $z.Dispose\\(\\)')",
+      "Bash(sort -k2)"
+    ]
+  }
+}

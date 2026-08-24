@@ -1,0 +1,12 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Core permissions for MeshChat plus the BLE mesh plugin listener.",
+  "windows": ["main"],
+  "webviews": ["main"],
+  "platforms": ["android", "iOS", "linux", "macOS", "windows"],
+  "permissions": [
+    "core:default",
+    "blemesh:default"
+  ]
+}

@@ -1,0 +1,20 @@
+[package]
+name = "tauri-plugin-blemesh"
+version = "0.1.0"
+description = "Dual-role BLE mesh transport for Tauri (Android) — advertise + scan + GATT, connectionless flooding"
+edition = "2021"
+rust-version = "1.77.2"
+# Required so the plugin's generated ACL permissions propagate to the app's
+# `tauri-build` (via DEP_TAURI_PLUGIN_BLEMESH_PERMISSION_FILES_PATH). Without
+# this the app's `generate_context!` can't resolve `blemesh:default`.
+links = "tauri-plugin-blemesh"
+
+[dependencies]
+tauri = { version = "2", default-features = false }
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+log = "0.4"
+serde_json = "1"
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }
