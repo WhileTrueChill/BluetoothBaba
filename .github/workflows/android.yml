@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -23,23 +23,24 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Setup Android
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Install dependencies
         run: npm install
 
-      - name: Add Android target
-        run: rustup target add aarch64-linux-android
+      - name: Add Rust Android target
+        run: |
+          rustup target add aarch64-linux-android
 
       - name: Initialize Android
         run: npm run tauri android init
 
-      - name: Build APK
-        run: npm run tauri android build
+      - name: Build Debug APK
+        run: npm run tauri android build -- --debug --apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MeshChat-APK
+          name: MeshChat-Debug-APK
           path: BluetoothBaba/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
