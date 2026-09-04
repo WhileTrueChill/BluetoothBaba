@@ -46,27 +46,24 @@ function mount(): void {
 subscribe(mount);
 
 async function boot(): Promise<void> {
-  mount(); // paint the first screen immediately
+  // Always paint the UI before any native/plugin work.
+  mount();
 
   try {
     await api.init();
     state.identity = await api.getIdentity();
   } catch (err) {
+    // A native/plugin initialization problem must never terminate the UI.
     console.error("mesh init failed", err);
   }
 
-  // Returning users (nickname already set) resume meshing on launch. Push the
-  // stored nickname to the backend first so our announce carries it.
-  if (state.nickname && !state.meshRunning) {
-    api
-      .setNickname(state.nickname)
-      .catch((err) => console.error("setNickname failed", err))
-      .finally(() => {
-        api.startMesh().catch((err) => console.error("startMesh failed", err));
-      });
-  }
-
+  // IMPORTANT: do not start Bluetooth automatically on application launch.
+  // Android may require runtime Nearby Devices permissions, Bluetooth may be
+  // disabled, or the adapter may be unavailable. Starting the native BLE
+  // stack here could terminate the process on some devices. The user starts
+  // the mesh explicitly from the Home screen after Android permissions are
+  // available.
   notify();
 }
 
-boot();
+void boot();
