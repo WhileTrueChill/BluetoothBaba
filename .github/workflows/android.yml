@@ -40,55 +40,42 @@ jobs:
       - name: Initialize Android
         run: npm run tauri android init
 
-      - name: Optimize Android release build
+      - name: Configure stable optimized release build
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
-
           path = Path("src-tauri/gen/android/app/build.gradle.kts")
           text = path.read_text()
-
           marker = 'getByName("release") {'
-          if marker not in text:
-              raise SystemExit("Could not find Android release build type")
-
-          # Tauri's generated project is recreated in CI, so keep the
-          # optimization here instead of committing the generated Android tree.
-          release = '''getByName("release") {
-                  // Use the CI debug keystore so the optimized APK is installable
-                  // without requiring a private production keystore in CI.
+          if marker in text:
+              start = text.index(marker)
+              brace = text.index("{", start)
+              depth = 0
+              end = None
+              for i in range(brace, len(text)):
+                  if text[i] == "{":
+                      depth += 1
+                  elif text[i] == "}":
+                      depth -= 1
+                      if depth == 0:
+                          end = i + 1
+                          break
+              if end is None:
+                  raise SystemExit("Could not parse release build type")
+              release = '''getByName("release") {
+                  // Keep the release APK stable: Tauri/Rust/JNI reflection can
+                  // require runtime symbols that aggressive R8 shrinking removes.
                   signingConfig = signingConfigs.getByName("debug")
-                  isMinifyEnabled = true
-                  isShrinkResources = true
-                  proguardFiles(
-                      getDefaultProguardFile("proguard-android-optimize.txt"),
-                      "proguard-rules.pro"
-                  )
+                  isMinifyEnabled = false
+                  isShrinkResources = false
           }'''
-
-          start = text.index(marker)
-          brace = text.index("{", start)
-          depth = 0
-          end = None
-          for i in range(brace, len(text)):
-              if text[i] == "{":
-                  depth += 1
-              elif text[i] == "}":
-                  depth -= 1
-                  if depth == 0:
-                      end = i + 1
-                      break
-          if end is None:
-              raise SystemExit("Could not parse Android release build type")
-
-          text = text[:start] + release + text[end:]
-          path.write_text(text)
-          print(f"Optimized {path}")
+              text = text[:start] + release + text[end:]
+              path.write_text(text)
           PY
 
-      - name: Build optimized ARM64 release APK
-        run: npm run tauri android build -- --apk --split-per-abi --target aarch64
+      - name: Build stable ARM64 release APK
+        run: npm run tauri android build -- --release --apk --split-per-abi --target aarch64
 
       - name: Locate APK
         id: apk
@@ -100,14 +87,13 @@ jobs:
             exit 1
           fi
           echo "apk=$APK" >> "$GITHUB_OUTPUT"
-          echo "Found APK: $APK"
           ls -lh "$APK"
 
       - name: Rename APK
         shell: bash
         run: cp "${{ steps.apk.outputs.apk }}" BluetoothBaba-ARM64-release.apk
 
-      - name: Upload optimized APK artifact
+      - name: Upload stable APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: BluetoothBaba-ARM64-release
