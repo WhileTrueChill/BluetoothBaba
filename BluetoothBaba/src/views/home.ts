@@ -36,7 +36,7 @@ export function HomeView(): View {
         icon(ICON.gear, 24),
       ),
     ),
-    h("div", { class: "large-title" }, "MeshChat"),
+    h("div", { class: "large-title" }, "BluetoothBaba"),
     h("div", { style: { padding: "0 16px 10px" } }, statusEl),
   );
 
@@ -118,20 +118,20 @@ export function HomeView(): View {
       "div",
       { class: "empty" },
       h("div", { class: "pulse" }, icon(ICON.bluetooth, 30)),
-      h("div", { class: "empty-title" }, "Mesh is off"),
+      h("div", { class: "empty-title" }, "Bluetooth Mesh is off"),
       h(
         "div",
         { class: "empty-text" },
-        "Turn on the mesh to discover people nearby over Bluetooth.",
+        "Turn on BluetoothBaba to discover people nearby over Bluetooth.",
       ),
       h(
         "button",
         {
           class: "btn-primary",
           style: { marginTop: "8px" },
-          onclick: () => api.startMesh().catch(() => {}),
+          onclick: () => api.startMesh().catch((err) => console.error("startMesh failed", err)),
         },
-        "Turn On Mesh",
+        "Turn On Bluetooth",
       ),
     );
   }
@@ -145,7 +145,7 @@ export function HomeView(): View {
       h(
         "div",
         { class: "empty-text" },
-        "Open MeshChat on another phone within Bluetooth range to start chatting.",
+        "Open BluetoothBaba on another phone within Bluetooth range to start chatting.",
       ),
     );
   }
@@ -155,7 +155,7 @@ export function HomeView(): View {
       (a, b) => b.lastSeen - a.lastSeen,
     );
 
-    if (!state.meshRunning) statusEl.textContent = "Mesh off";
+    if (!state.meshRunning) statusEl.textContent = "Bluetooth off";
     else if (peers.length === 0) statusEl.textContent = "Meshing · searching…";
     else statusEl.textContent = `Meshing · ${peers.length} nearby`;
 
