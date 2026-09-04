@@ -22,6 +22,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: BluetoothBaba/package-lock.json
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
@@ -30,7 +32,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Add Rust Android target
         run: rustup target add aarch64-linux-android
@@ -38,8 +40,55 @@ jobs:
       - name: Initialize Android
         run: npm run tauri android init
 
-      - name: Build signed debug APK
-        run: npm run tauri android build -- --debug --apk
+      - name: Optimize Android release build
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("src-tauri/gen/android/app/build.gradle.kts")
+          text = path.read_text()
+
+          marker = 'getByName("release") {'
+          if marker not in text:
+              raise SystemExit("Could not find Android release build type")
+
+          # Tauri's generated project is recreated in CI, so keep the
+          # optimization here instead of committing the generated Android tree.
+          release = '''getByName("release") {
+                  // Use the CI debug keystore so the optimized APK is installable
+                  // without requiring a private production keystore in CI.
+                  signingConfig = signingConfigs.getByName("debug")
+                  isMinifyEnabled = true
+                  isShrinkResources = true
+                  proguardFiles(
+                      getDefaultProguardFile("proguard-android-optimize.txt"),
+                      "proguard-rules.pro"
+                  )
+          }'''
+
+          start = text.index(marker)
+          brace = text.index("{", start)
+          depth = 0
+          end = None
+          for i in range(brace, len(text)):
+              if text[i] == "{":
+                  depth += 1
+              elif text[i] == "}":
+                  depth -= 1
+                  if depth == 0:
+                      end = i + 1
+                      break
+          if end is None:
+              raise SystemExit("Could not parse Android release build type")
+
+          text = text[:start] + release + text[end:]
+          path.write_text(text)
+          print(f"Optimized {path}")
+          PY
+
+      - name: Build optimized ARM64 release APK
+        run: npm run tauri android build -- --apk --split-per-abi --target aarch64
 
       - name: Locate APK
         id: apk
@@ -56,20 +105,20 @@ jobs:
 
       - name: Rename APK
         shell: bash
-        run: cp "${{ steps.apk.outputs.apk }}" BluetoothBaba-Debug-signed.apk
+        run: cp "${{ steps.apk.outputs.apk }}" BluetoothBaba-ARM64-release.apk
 
-      - name: Upload APK artifact
+      - name: Upload optimized APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: BluetoothBaba-Debug-signed
-          path: BluetoothBaba/BluetoothBaba-Debug-signed.apk
+          name: BluetoothBaba-ARM64-release
+          path: BluetoothBaba/BluetoothBaba-ARM64-release.apk
           if-no-files-found: error
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: bluetoothbaba-debug-${{ github.run_number }}
-          name: BluetoothBaba Debug Build ${{ github.run_number }}
+          tag_name: bluetoothbaba-android-${{ github.run_number }}
+          name: BluetoothBaba Android ARM64 Build ${{ github.run_number }}
           prerelease: true
           generate_release_notes: false
-          files: BluetoothBaba/BluetoothBaba-Debug-signed.apk
+          files: BluetoothBaba/BluetoothBaba-ARM64-release.apk
