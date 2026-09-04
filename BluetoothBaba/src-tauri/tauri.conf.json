@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "MeshChat",
+  "productName": "BluetoothBaba",
   "version": "1.0.0",
   "identifier": "com.meshchat.app",
   "build": {
@@ -13,7 +13,7 @@
     "withGlobalTauri": false,
     "windows": [
       {
-        "title": "MeshChat",
+        "title": "BluetoothBaba",
         "width": 420,
         "height": 900,
         "resizable": true
