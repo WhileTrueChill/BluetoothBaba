@@ -17,7 +17,7 @@ export function SettingsView(): View {
         "button",
         { class: "nav-btn left", onclick: () => navigate("home") },
         icon(ICON.back, 24),
-        "MeshChat",
+        "BluetoothBaba",
       ),
       h("div", { class: "navbar-center" }, h("div", { class: "navbar-title" }, "Settings")),
       h("span", { class: "nav-btn right" }),
@@ -26,7 +26,6 @@ export function SettingsView(): View {
 
   const body = h("div", { class: "body" });
 
-  // ---- Profile: editable nickname -----------------------------------------
   const nickInput = h("input", {
     class: "cell-input",
     type: "text",
@@ -58,7 +57,6 @@ export function SettingsView(): View {
     ),
   );
 
-  // ---- Identity: peer id (tap to copy) ------------------------------------
   const peerId = state.identity?.peerId ?? "";
   const idValue = h(
     "span",
@@ -86,12 +84,11 @@ export function SettingsView(): View {
     idValue,
   );
 
-  // ---- Mesh: on/off toggle ------------------------------------------------
   const toggle = h("input", { type: "checkbox" }) as HTMLInputElement;
   toggle.checked = state.meshRunning;
   toggle.addEventListener("change", () => {
-    if (toggle.checked) api.startMesh().catch(() => {});
-    else api.stopMesh().catch(() => {});
+    if (toggle.checked) api.startMesh().catch((err) => console.error("startMesh failed", err));
+    else api.stopMesh().catch((err) => console.error("stopMesh failed", err));
   });
   const meshCell = h(
     "div",
@@ -107,7 +104,6 @@ export function SettingsView(): View {
   );
 
   function render(): void {
-    // Keep controls in sync when the mesh state changes elsewhere.
     toggle.checked = state.meshRunning;
     if (document.activeElement !== nickInput) nickInput.value = state.nickname;
     if (peerId) idValue.textContent = shortId(peerId);
@@ -128,7 +124,7 @@ export function SettingsView(): View {
     h(
       "div",
       { class: "section-hint" },
-      "MeshChat works entirely over Bluetooth Low Energy. Messages hop from phone to phone — no Wi-Fi, mobile data, servers, or accounts.",
+      "BluetoothBaba works entirely over Bluetooth Low Energy. Messages can hop from phone to phone — no Wi-Fi, mobile data, servers, or accounts.",
     ),
     h("div", { class: "section-header" }, "About"),
     h(
@@ -141,7 +137,7 @@ export function SettingsView(): View {
         h("span", { class: "cell-value" }, APP_VERSION),
       ),
     ),
-    h("div", { class: "footer-note" }, "MeshChat — offline, serverless, private."),
+    h("div", { class: "footer-note" }, "BluetoothBaba — offline, serverless, private."),
   );
 
   render();
