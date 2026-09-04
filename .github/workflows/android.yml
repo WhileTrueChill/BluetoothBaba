@@ -1,6 +1,8 @@
 name: Build Android APK
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -40,7 +42,7 @@ jobs:
       - name: Initialize Android
         run: npm run tauri android init
 
-      - name: Configure stable optimized release build
+      - name: Configure stable release build
         shell: bash
         run: |
           python3 - <<'PY'
@@ -62,10 +64,9 @@ jobs:
                           end = i + 1
                           break
               if end is None:
-                  raise SystemExit("Could not parse release build type")
+                  raise SystemExit("Could not parse Android release build type")
               release = '''getByName("release") {
-                  // Keep the release APK stable: Tauri/Rust/JNI reflection can
-                  // require runtime symbols that aggressive R8 shrinking removes.
+                  // Preserve Tauri/Rust/JNI runtime classes for reliable startup.
                   signingConfig = signingConfigs.getByName("debug")
                   isMinifyEnabled = false
                   isShrinkResources = false
@@ -82,10 +83,7 @@ jobs:
         shell: bash
         run: |
           APK=$(find src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk' | head -n 1)
-          if [ -z "$APK" ]; then
-            echo 'No APK was produced.' >&2
-            exit 1
-          fi
+          test -n "$APK" || { echo 'No APK was produced.' >&2; exit 1; }
           echo "apk=$APK" >> "$GITHUB_OUTPUT"
           ls -lh "$APK"
 
