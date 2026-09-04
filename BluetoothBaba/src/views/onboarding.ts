@@ -18,11 +18,11 @@ export function OnboardingView(): View {
         setNickname(nick);
         await api.setNickname(nick).catch(() => {});
         navigate("home");
-        // Kicks off BLE permission prompts + advertising/scanning natively.
-        api.startMesh().catch(() => {});
+        // Starts BLE permissions, Bluetooth activation, advertising and scanning.
+        api.startMesh().catch((err) => console.error("startMesh failed", err));
       },
     },
-    "Start Meshing",
+    "Start BluetoothBaba",
   ) as HTMLButtonElement;
 
   const input = h("input", {
@@ -50,7 +50,7 @@ export function OnboardingView(): View {
       "div",
       { class: "onboard" },
       h("div", { class: "logo" }, icon(ICON.bluetooth, 46)),
-      h("h1", null, "MeshChat"),
+      h("h1", null, "BluetoothBaba"),
       h(
         "p",
         null,
@@ -61,7 +61,7 @@ export function OnboardingView(): View {
       h(
         "p",
         { class: "hint" },
-        "Pick a name others will see nearby. You can change it later in Settings.",
+        "Pick a name others will see nearby. Bluetooth permissions will be requested when you start.",
       ),
     ),
   );
