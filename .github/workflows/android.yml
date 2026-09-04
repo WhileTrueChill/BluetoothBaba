@@ -76,7 +76,7 @@ jobs:
           PY
 
       - name: Build stable ARM64 release APK
-        run: npm run tauri android build -- --release --apk --split-per-abi --target aarch64
+        run: npm run tauri android build -- --apk --split-per-abi --target aarch64
 
       - name: Locate APK
         id: apk
