@@ -3,6 +3,9 @@ name: Build Android APK
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -30,17 +33,43 @@ jobs:
         run: npm install
 
       - name: Add Rust Android target
-        run: |
-          rustup target add aarch64-linux-android
+        run: rustup target add aarch64-linux-android
 
       - name: Initialize Android
         run: npm run tauri android init
 
-      - name: Build Debug APK
+      - name: Build signed debug APK
         run: npm run tauri android build -- --debug --apk
 
-      - name: Upload APK
+      - name: Locate APK
+        id: apk
+        shell: bash
+        run: |
+          APK=$(find src-tauri/gen/android/app/build/outputs/apk -type f -name '*.apk' | head -n 1)
+          if [ -z "$APK" ]; then
+            echo 'No APK was produced.' >&2
+            exit 1
+          fi
+          echo "apk=$APK" >> "$GITHUB_OUTPUT"
+          echo "Found APK: $APK"
+          ls -lh "$APK"
+
+      - name: Rename APK
+        shell: bash
+        run: cp "${{ steps.apk.outputs.apk }}" BluetoothBaba-Debug-signed.apk
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: MeshChat-Debug-APK
-          path: BluetoothBaba/src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          name: BluetoothBaba-Debug-signed
+          path: BluetoothBaba/BluetoothBaba-Debug-signed.apk
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: bluetoothbaba-debug-${{ github.run_number }}
+          name: BluetoothBaba Debug Build ${{ github.run_number }}
+          prerelease: true
+          generate_release_notes: false
+          files: BluetoothBaba/BluetoothBaba-Debug-signed.apk
