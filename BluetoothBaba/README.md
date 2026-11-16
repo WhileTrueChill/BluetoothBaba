@@ -51,20 +51,37 @@ phone home, and there's nothing embeddable to leak. It is offline by design.
 
 ## Build the APK (GitHub Actions)
 
-1. Push this repository to GitHub (branch `main` or `master`).
-2. Open the **Actions** tab → the **Android APK** workflow runs automatically
-   (or trigger it manually with **Run workflow**).
-3. When it finishes, download the **`meshchat-debug-apk`** artifact from the run
-   summary. It contains the installable `.apk`.
+1. Push this repository to GitHub on branch `main`.
+2. Open **Actions → Build Android APK**. The workflow runs automatically after a push, or you can select **Run workflow**.
+3. Download the `BluetoothBaba-ARM64-release` artifact from the run summary, or use the APK attached to the generated GitHub Release.
 
-The workflow does everything: installs Node/JDK 17/Android SDK + NDK/Rust
-Android targets, generates the app icon, builds the web frontend, compiles the
-Rust + Kotlin, and assembles a **debug-signed** APK for `arm64-v8a` and
-`armeabi-v7a` (covers essentially all real phones).
+The workflow installs Node, Rust, the Android SDK and NDK toolchain, initializes the Tauri Android project, type-checks the frontend, and builds an ARM64 APK.
 
-> Debug-signed means it installs without a Play Store account. To publish a
-> release build you'd add a keystore and switch to `--release`; that's out of
-> scope here.
+### Keep future APK updates installable
+
+Android only permits an in-place APK update when the new APK uses the **same application ID and signing certificate** as the installed app. The CI workflow therefore supports a persistent release keystore through GitHub Actions secrets.
+
+Create a signing keystore once and keep a secure backup. Do not commit the keystore or its passwords to this repository.
+
+Add these four repository secrets under **Settings → Secrets and variables → Actions**:
+
+- `ANDROID_KEYSTORE_BASE64` — Base64 text of the keystore file
+- `ANDROID_KEYSTORE_PASSWORD` — keystore password
+- `ANDROID_KEY_ALIAS` — key alias
+- `ANDROID_KEY_PASSWORD` — key password
+
+For Windows PowerShell, create the Base64 value with:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes(".\bluetoothbaba-release.jks"))
+```
+
+When all four secrets are present, new APKs use that stable key. Without them, CI falls back to a temporary debug key; those builds are for testing and may not update an APK signed by a different CI run.
+
+**Important for the first migration:** the older CI APK was signed with a runner-generated debug key. A new persistent signing key cannot replace it in place. If Android reports a signature/package conflict, uninstall the old app once before installing the new stable-signed APK. Uninstalling clears this app's locally stored identity and nickname, so do this only after you are ready to reset that local app data.
+
+The Android package ID remains `com.meshchat.app`. The app version is now `1.0.1` with Android version code `1000001`, so future releases have an incremented version.
+
 
 ---
 
