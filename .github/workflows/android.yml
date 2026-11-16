@@ -36,46 +36,101 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Type-check frontend
+        run: npm run typecheck
+
       - name: Add Rust Android target
         run: rustup target add aarch64-linux-android
 
       - name: Initialize Android
         run: npm run tauri android init
 
-      - name: Configure stable release build
+      - name: Configure APK signing
+        id: signing
         shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           python3 - <<'PY'
+          import base64
+          import os
           from pathlib import Path
-          path = Path("src-tauri/gen/android/app/build.gradle.kts")
-          text = path.read_text()
-          marker = 'getByName("release") {'
-          if marker in text:
-              start = text.index(marker)
-              brace = text.index("{", start)
-              depth = 0
-              end = None
-              for i in range(brace, len(text)):
-                  if text[i] == "{":
-                      depth += 1
-                  elif text[i] == "}":
-                      depth -= 1
-                      if depth == 0:
-                          end = i + 1
-                          break
-              if end is None:
-                  raise SystemExit("Could not parse Android release build type")
-              release = '''getByName("release") {
-                  // Preserve Tauri/Rust/JNI runtime classes for reliable startup.
-                  signingConfig = signingConfigs.getByName("debug")
-                  isMinifyEnabled = false
-                  isShrinkResources = false
-          }'''
-              text = text[:start] + release + text[end:]
-              path.write_text(text)
-          PY
 
-      - name: Build stable ARM64 release APK
+          path = Path("src-tauri/gen/android/app/build.gradle.kts")
+          text = path.read_text(encoding="utf-8")
+          required = [
+              "ANDROID_KEYSTORE_BASE64",
+              "ANDROID_KEYSTORE_PASSWORD",
+              "ANDROID_KEY_ALIAS",
+              "ANDROID_KEY_PASSWORD",
+          ]
+          stable = all(os.environ.get(name, "").strip() for name in required)
+          signing_name = "debug"
+
+          if stable:
+              keystore_data = base64.b64decode(os.environ["ANDROID_KEYSTORE_BASE64"], validate=True)
+              if not keystore_data:
+                  raise SystemExit("ANDROID_KEYSTORE_BASE64 decoded to an empty file.")
+              (path.parent / "bluetoothbaba-release.jks").write_bytes(keystore_data)
+              signing_name = "stableRelease"
+              signing_config = '''
+              signingConfigs {
+                  create("stableRelease") {
+                      storeFile = file("bluetoothbaba-release.jks")
+                      storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+                      keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+                  }
+              }
+          '''
+              marker = "    buildTypes {"
+              if marker not in text:
+                  raise SystemExit("Could not find Android buildTypes block to configure signing.")
+              text = text.replace(marker, signing_config + marker, 1)
+              print("Using the repository's stable Android signing key.")
+          else:
+              print("::warning::Android signing secrets are incomplete. This APK will use a temporary debug key and will not be suitable for seamless updates between CI builds.")
+
+          marker = 'getByName("release") {'
+          if marker not in text:
+              raise SystemExit("Could not find Android release build type.")
+          start = text.index(marker)
+          brace = text.index("{", start)
+          depth = 0
+          end = None
+          for i in range(brace, len(text)):
+              if text[i] == "{":
+                  depth += 1
+              elif text[i] == "}":
+                  depth -= 1
+                  if depth == 0:
+                      end = i + 1
+                      break
+          if end is None:
+              raise SystemExit("Could not parse Android release build type.")
+
+          release = f'''getByName("release") {{
+              signingConfig = signingConfigs.getByName("{signing_name}")
+              isMinifyEnabled = false
+              isShrinkResources = false
+          }}'''
+          text = text[:start] + release + text[end:]
+          path.write_text(text, encoding="utf-8")
+          PY
+          if [[ -n "$ANDROID_KEYSTORE_BASE64" && -n "$ANDROID_KEYSTORE_PASSWORD" && -n "$ANDROID_KEY_ALIAS" && -n "$ANDROID_KEY_PASSWORD" ]]; then
+            echo "mode=stable" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=debug" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build ARM64 release APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: npm run tauri android build -- --apk --split-per-abi --target aarch64
 
       - name: Locate APK
@@ -91,7 +146,7 @@ jobs:
         shell: bash
         run: cp "${{ steps.apk.outputs.apk }}" BluetoothBaba-ARM64-release.apk
 
-      - name: Upload stable APK artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: BluetoothBaba-ARM64-release
